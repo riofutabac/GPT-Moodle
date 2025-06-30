@@ -1,10 +1,11 @@
-/** @type {import('tailwindcss').Config} */
+// tailwind.config.js
 module.exports = {
   content: [
-    './extension/popup/**/*.html', // Le decimos que busque clases aquí
+    './src/**/*.{html,js,ts}',
+    './extension/**/*.{html,js,ts}' // Incluye toda la carpeta extension
   ],
   theme: {
-    extend: {},
+    extend: {}
   },
-  plugins: [],
+  plugins: []
 };
