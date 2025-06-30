@@ -1,8 +1,8 @@
 import OpenAI from 'openai';
 import { isCurrentVersionSupportingImages, showMessage } from './utils';
 
-// Esta es la forma que funciona gracias al cambio en eslint.config.js
-const { GoogleGenerativeAI } = require('@google/genai');
+// Importación directa de Gemini
+import { GoogleGenAI } from '@google/genai';
 
 const inputModel = document.querySelector('#model') as HTMLInputElement;
 const modelsList = document.querySelector('#models') as HTMLElement;
@@ -66,9 +66,8 @@ export async function checkModel() {
       ).value?.trim();
       if (!geminiApiKey) throw new Error('No se proporcionó una clave de API de Gemini.');
 
-      const genAI = new GoogleGenerativeAI(geminiApiKey);
-      const geminiModel = genAI.getGenerativeModel({ model });
-      await geminiModel.generateContent('Test');
+      const genAI = new GoogleGenAI({ apiKey: geminiApiKey });
+      await genAI.models.generateContent({ model, contents: 'Test' });
     } else {
       // OpenAI
       const apiKey = (document.querySelector('#apiKey') as HTMLInputElement).value?.trim();

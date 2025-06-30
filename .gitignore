@@ -6,4 +6,3 @@ node_modules
 .env.*
 
 # Archivos de compilación y temporales
-/extension

@@ -5,11 +5,11 @@ import getContentWithHistory from './get-content-with-history';
 import OpenAI from 'openai';
 import { fixeO1 } from '../utils/fixe-o1';
 
-// Esta es la forma que funciona gracias al cambio en eslint.config.js
-const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/genai');
+// Importación directa de Gemini
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 
-function convertToGeminiMessages(messages: any[]) {
-  const geminiMessages = [];
+function convertToGeminiMessages(messages: any[]): { role: string; parts: { text: string }[] }[] {
+  const geminiMessages: { role: string; parts: { text: string }[] }[] = [];
   const startIndex = messages[0]?.role === 'system' ? 1 : 0;
 
   for (let i = startIndex; i < messages.length; i++) {
@@ -33,9 +33,12 @@ async function getChatGPTResponse(
   let responseText = '';
 
   if (config.apiProvider === 'gemini' && config.geminiApiKey) {
-    const genAI = new GoogleGenerativeAI(config.geminiApiKey);
-    const model = genAI.getGenerativeModel({
+    const genAI = new GoogleGenAI({ apiKey: config.geminiApiKey });
+    const geminiMessages = convertToGeminiMessages(contentHandler.messages);
+
+    const geminiParams: any = {
       model: config.model,
+      contents: geminiMessages,
       safetySettings: [
         {
           category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -54,16 +57,11 @@ async function getChatGPTResponse(
           threshold: HarmBlockThreshold.BLOCK_NONE
         }
       ]
-    });
+    };
 
-    const geminiMessages = convertToGeminiMessages(contentHandler.messages);
+    const result = await genAI.models.generateContent(geminiParams);
 
-    const result = await model.generateContent({
-      contents: geminiMessages
-    });
-
-    const response = await result.response;
-    responseText = response.text();
+    responseText = result.text || '';
   } else {
     const client = new OpenAI({
       apiKey: config.apiKey,

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MoodleGPT</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="./popup.js" defer></script>
+    <link rel="icon" type="image/png" href="../icon.png" />
+  </head>
+  <body class="bg-zinc-900 text-zinc-200 font-sans">
+    <main class="w-96 p-6 space-y-6">
+      <div class="flex items-center gap-4">
+        <img src="../icon.png" alt="icon" class="w-12 h-12" />
+        <div>
+          <h1 class="text-2xl font-bold text-white">MoodleGPT</h1>
+          <p id="version" class="text-xs text-zinc-400"></p>
+        </div>
+      </div>
+
+      <div class="bg-zinc-800 p-4 rounded-lg space-y-4 border border-zinc-700">
+        <div class="grid grid-cols-2 gap-2 rounded-lg bg-zinc-900 p-1">
+          <label for="providerOpenAI" class="text-center text-sm py-1.5 rounded-md cursor-pointer has-[:checked]:bg-blue-600 has-[:checked]:text-white transition-colors">OpenAI</label>
+          <input type="radio" id="providerOpenAI" name="apiProvider" value="openai" class="sr-only" checked />
+          <label for="providerGemini" class="text-center text-sm py-1.5 rounded-md cursor-pointer has-[:checked]:bg-blue-600 has-[:checked]:text-white transition-colors">Gemini</label>
+          <input type="radio" id="providerGemini" name="apiProvider" value="gemini" class="sr-only" />
+        </div>
+
+        <div id="openai_config">
+          <label for="apiKey" class="text-xs font-semibold text-zinc-400 mb-1 block">OPENAI API KEY*</label>
+          <input id="apiKey" type="password" placeholder="sk-..." class="w-full bg-zinc-700 border border-zinc-600 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        </div>
+        <div id="gemini_config" style="display: none">
+          <label for="geminiApiKey" class="text-xs font-semibold text-zinc-400 mb-1 block">GEMINI API KEY*</label>
+          <input id="geminiApiKey" type="password" placeholder="AIzaSy..." class="w-full bg-zinc-700 border border-zinc-600 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        </div>
+
+        <div class="relative">
+            <label for="model" class="text-xs font-semibold text-zinc-400 mb-1 block">MODELO*</label>
+            <div class="flex items-center gap-2">
+                <input type="text" id="model" list="models" placeholder="gpt-4o, gemini-1.5-flash, ..." class="w-full bg-zinc-700 border border-zinc-600 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                <datalist id="models"></datalist>
+                <button id="check-model" title="Test Model" class="p-2 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-md transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M5.536 21.886a1.004 1.004 0 0 0 1.033-.064l13-9a1 1 0 0 0 0-1.644l-13-9A1 1 0 0 0 5 3v18a1 1 0 0 0 .536.886z"></path></svg>
+                </button>
+            </div>
+        </div>
+        <a id="switch-settings" href="#" class="text-xs text-blue-500 hover:underline text-center block">Ajustes Avanzados</a>
+      </div>
+
+      <div id="advanced-settings" class="bg-zinc-800 p-4 rounded-lg space-y-4 border border-zinc-700" style="display: none;">
+          </div>
+      
+      <div id="mode" class="grid grid-cols-3 gap-2 rounded-lg bg-zinc-800 p-1 border border-zinc-700">
+        <button value="autocomplete" class="text-sm py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900">Autocomplete</button>
+        <button value="clipboard" class="not-selected text-sm py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900">Clipboard</button>
+        <button value="question-to-answer" class="not-selected text-sm py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900">Q & A</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+        <div class="flex items-center gap-2"><input id="logs" type="checkbox" class="h-4 w-4 rounded bg-zinc-700 border-zinc-600 text-blue-600 focus:ring-blue-500" /><label for="logs">Console logs</label></div>
+        <div class="flex items-center gap-2"><input id="typing" type="checkbox" class="h-4 w-4 rounded bg-zinc-700 border-zinc-600 text-blue-600 focus:ring-blue-500" /><label for="typing">Typing effect</label></div>
+        <div class="flex items-center gap-2"><input id="title" type="checkbox" checked class="h-4 w-4 rounded bg-zinc-700 border-zinc-600 text-blue-600 focus:ring-blue-500" /><label for="title">Title indication</label></div>
+        <div class="flex items-center gap-2"><input id="mouseover" type="checkbox" class="h-4 w-4 rounded bg-zinc-700 border-zinc-600 text-blue-600 focus:ring-blue-500" /><label for="mouseover">Mouseover effect</label></div>
+        <div class="flex items-center gap-2"><input id="cursor" type="checkbox" checked class="h-4 w-4 rounded bg-zinc-700 border-zinc-600 text-blue-600 focus:ring-blue-500" /><label for="cursor">Cursor indication</label></div>
+        <div class="flex items-center gap-2"><input id="infinite" type="checkbox" class="h-4 w-4 rounded bg-zinc-700 border-zinc-600 text-blue-600 focus:ring-blue-500" /><label for="infinite">Infinite try</label></div>
+        <div class="flex items-center gap-2"><input id="timeout" type="checkbox" checked class="h-4 w-4 rounded bg-zinc-700 border-zinc-600 text-blue-600 focus:ring-blue-500" /><label for="timeout">Request timeout</label></div>
+        <div class="flex items-center gap-2"><input id="history" type="checkbox" class="h-4 w-4 rounded bg-zinc-700 border-zinc-600 text-blue-600 focus:ring-blue-500" /><label for="history">Save history</label></div>
+        <div id="includeImages-line" class="flex items-center gap-2" style="display: none;"><input id="includeImages" type="checkbox" class="h-4 w-4 rounded bg-zinc-700 border-zinc-600 text-blue-600 focus:ring-blue-500" /><label for="includeImages">Include images</label></div>
+      </div>
+      
+      <div class="pt-2 space-y-2">
+        <button class="save w-full bg-blue-600 text-white font-bold py-2.5 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900">Guardar Cambios</button>
+        <p id="message" class="text-sm text-center h-4"></p>
+      </div>
+
+      <div class="flex justify-center items-center gap-4 text-xs text-zinc-500 pt-4 border-t border-zinc-800">
+        <a href="https://www.buymeacoffee.com/yoannchbpro" target="_blank" class="hover:text-zinc-300">Donate</a>
+        <a href="https://github.com/yoannchb-pro/MoodleGPT" target="_blank" class="hover:text-zinc-300">Docs</a>
+        <a href="https://github.com/yoannchb-pro/MoodleGPT/issues" target="_blank" class="hover:text-zinc-300">Help</a>
+      </div>
+
+    </main>
+  </body>
+</html>

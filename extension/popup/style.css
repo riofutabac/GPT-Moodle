@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilo para los botones de modo que no están seleccionados */
+#mode button.not-selected {
+  @apply bg-zinc-800 text-zinc-400 hover:bg-zinc-700;
+}
+
+/* Estilo para el botón de modo que SÍ está seleccionado */
+#mode button {
+  @apply bg-blue-600 text-white;
+}
