@@ -19,7 +19,7 @@ function updateVisibleApiKeyField() {
   const selectedProvider = (
     document.querySelector('input[name="apiProvider"]:checked') as HTMLInputElement
   )?.value;
-  
+
   // Actualizar visibilidad de campos
   if (selectedProvider === 'openai') {
     openAIConfig.style.display = 'flex';
@@ -28,14 +28,16 @@ function updateVisibleApiKeyField() {
     openAIConfig.style.display = 'none';
     geminiConfig.style.display = 'flex';
   }
-  
+
   // Actualizar clases de los labels
   providerLabels.forEach(label => {
     label.classList.remove('selected');
   });
-  
+
   // Marcar el label correspondiente como seleccionado
-  const selectedLabel = document.querySelector(`label[for="provider${selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1)}"]`);
+  const selectedLabel = document.querySelector(
+    `label[for="provider${selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1)}"]`
+  );
   if (selectedLabel) {
     selectedLabel.classList.add('selected');
   }

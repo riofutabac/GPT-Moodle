@@ -13,10 +13,10 @@ export function showMessage({
   isLoading?: boolean;
 }) {
   const message: HTMLElement = document.querySelector('#message')!;
-  
+
   // Limpiar clases previas
   message.className = 'message';
-  
+
   // Agregar clase según el tipo
   if (isLoading) {
     message.classList.add('loading');
@@ -25,10 +25,10 @@ export function showMessage({
   } else {
     message.classList.add('success');
   }
-  
+
   message.textContent = msg;
   message.classList.remove('hidden');
-  
+
   if (!isInfinite) {
     setTimeout(() => {
       message.classList.add('hidden');

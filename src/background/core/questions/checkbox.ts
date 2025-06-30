@@ -1,7 +1,7 @@
 import type Config from '../../types/config';
 import type GPTAnswer from '../../types/gpt-answer';
 import Logs from 'background/utils/logs';
-import normalizeText from 'background/utils/normalize-text';
+import { extractAnswersFromResponse, extractCheckboxAnswers } from 'background/utils/normalize-text';
 import { pickBestReponse } from 'background/utils/pick-best-response';
 
 /**
@@ -22,29 +22,39 @@ function handleCheckbox(
     return false;
   }
 
-  const corrects = gptAnswer.normalizedResponse.split('\n');
-
   const possibleAnswers = Array.from(inputList)
     .map(inp => ({
       element: inp as HTMLInputElement,
-      value: normalizeText(inp?.parentElement?.textContent ?? '')
+      value: inp?.parentElement?.textContent?.toLowerCase().trim() ?? ''
     }))
     .filter(obj => obj.value !== '');
 
+  // Extract all valid answers from the response using the smart extraction
+  // Try checkbox-specific extraction first (for YES/NO questions)
+  let extractedAnswers = extractCheckboxAnswers(gptAnswer.normalizedResponse);
+  
+  // If no YES/NO answers found, use general extraction
+  if (extractedAnswers.length === 0) {
+    extractedAnswers = extractAnswersFromResponse(gptAnswer.normalizedResponse);
+  }
+
   // Find the best answers elements
   const correctElements: Set<HTMLInputElement> = new Set();
-  for (const correct of corrects) {
-    const bestAnswer = pickBestReponse(correct, possibleAnswers);
+  for (const extractedAnswer of extractedAnswers) {
+    const bestAnswer = pickBestReponse(extractedAnswer, possibleAnswers);
 
     if (config.logs && bestAnswer.value) {
       Logs.bestAnswer(bestAnswer.value, bestAnswer.similarity);
     }
 
-    correctElements.add(bestAnswer.element as HTMLInputElement);
+    // Only add if we found a valid element
+    if (bestAnswer.element) {
+      correctElements.add(bestAnswer.element as HTMLInputElement);
+    }
   }
 
   // Check if it should be checked or not
-  for (const element of possibleAnswers.map(e => e.element)) {
+  for (const element of possibleAnswers.map((e: { element: HTMLInputElement }) => e.element)) {
     const needAction =
       (element.checked && !correctElements.has(element)) ||
       (!element.checked && correctElements.has(element));

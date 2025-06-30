@@ -1,7 +1,7 @@
 import type Config from '../../types/config';
 import type GPTAnswer from '../../types/gpt-answer';
 import Logs from 'background/utils/logs';
-import normalizeText from 'background/utils/normalize-text';
+import normalizeText, { extractAnswersFromResponse } from 'background/utils/normalize-text';
 import { pickBestReponse } from 'background/utils/pick-best-response';
 
 /**
@@ -22,8 +22,15 @@ function handleSelect(
 
   if (config.logs) Logs.array(corrects);
 
-  for (let i = 0; i < inputList.length; ++i) {
-    if (!corrects[i]) break;
+  // Extract all valid answers from the response using the smart extraction
+  const extractedAnswers = extractAnswersFromResponse(gptAnswer.normalizedResponse);
+
+  if (config.logs) {
+    console.log('[EXTRACTED ANSWERS]', extractedAnswers);
+  }
+
+  for (let i = 0; i < inputList.length && i < extractedAnswers.length; ++i) {
+    const extractedAnswer = extractedAnswers[i];
 
     const options = inputList[i].querySelectorAll('option');
 
@@ -35,11 +42,14 @@ function handleSelect(
       }))
       .filter(obj => obj.value !== '');
 
-    const bestAnswer = pickBestReponse(corrects[i], possibleAnswers);
+    const bestAnswer = pickBestReponse(extractedAnswer, possibleAnswers);
 
     if (config.logs && bestAnswer.value) {
       Logs.bestAnswer(bestAnswer.value, bestAnswer.similarity);
     }
+
+    // Check if we found a valid answer
+    if (!bestAnswer.element) continue;
 
     const correctOption = bestAnswer.element as HTMLOptionElement;
     const currentSelect = correctOption.closest('select');

@@ -218,26 +218,30 @@
 
     <script>
       // Simple interactive preview
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
         // Provider selector - Lógica mejorada
         const providerOptions = document.querySelectorAll('.provider-option');
         const providerRadios = document.querySelectorAll('input[name="apiProvider"]');
-        
+
         function updateProviderSelection() {
-          const selectedProvider = document.querySelector('input[name="apiProvider"]:checked').value;
-          
+          const selectedProvider = document.querySelector(
+            'input[name="apiProvider"]:checked'
+          ).value;
+
           // Limpiar todas las selecciones
           providerOptions.forEach(opt => opt.classList.remove('selected'));
-          
+
           // Marcar el correcto como seleccionado
-          const selectedLabel = document.querySelector(`label[for="provider${selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1)}"]`);
+          const selectedLabel = document.querySelector(
+            `label[for="provider${selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1)}"]`
+          );
           if (selectedLabel) {
             selectedLabel.classList.add('selected');
           }
         }
-        
+
         providerOptions.forEach(option => {
-          option.addEventListener('click', function() {
+          option.addEventListener('click', function () {
             const forAttribute = this.getAttribute('for');
             if (forAttribute) {
               const radio = document.getElementById(forAttribute);
@@ -248,7 +252,7 @@
             }
           });
         });
-        
+
         providerRadios.forEach(radio => {
           radio.addEventListener('change', updateProviderSelection);
         });
@@ -256,7 +260,7 @@
         // Mode buttons
         const modeButtons = document.querySelectorAll('.mode-button');
         modeButtons.forEach(button => {
-          button.addEventListener('click', function() {
+          button.addEventListener('click', function () {
             modeButtons.forEach(btn => {
               btn.classList.remove('selected');
               btn.setAttribute('aria-checked', 'false');
@@ -268,7 +272,7 @@
 
         // Settings toggle
         const settingsToggle = document.getElementById('switch-settings');
-        settingsToggle.addEventListener('click', function(e) {
+        settingsToggle.addEventListener('click', function (e) {
           e.preventDefault();
           const expanded = this.getAttribute('aria-expanded') === 'true';
           this.setAttribute('aria-expanded', !expanded);
@@ -277,28 +281,28 @@
         // Save button
         const saveButton = document.querySelector('.save');
         const message = document.getElementById('message');
-        saveButton.addEventListener('click', function() {
+        saveButton.addEventListener('click', function () {
           message.className = 'message success';
           message.textContent = 'Settings saved successfully!';
           message.classList.remove('hidden');
-          
+
           setTimeout(() => {
             message.classList.add('hidden');
           }, 3000);
         });
-        
+
         // Model validation button
         const checkModelBtn = document.getElementById('check-model');
-        checkModelBtn.addEventListener('click', function() {
+        checkModelBtn.addEventListener('click', function () {
           message.className = 'message loading';
           message.textContent = 'Probando el modelo...';
           message.classList.remove('hidden');
-          
+
           // Simular validación
           setTimeout(() => {
             message.className = 'message success';
             message.textContent = '¡El modelo es válido!';
-            
+
             setTimeout(() => {
               message.classList.add('hidden');
             }, 3000);
