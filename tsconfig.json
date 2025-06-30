@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": "src",
+    "module": "ESNext",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES6",
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "outDir": "extension",
+    "resolveJsonModule": true,
+    "types": ["node", "chrome"],
+    "typeRoots": ["node_modules/@types"],
+    "strictBindCallApply": true
+  },
+  "include": ["src/**/*"]
+}
