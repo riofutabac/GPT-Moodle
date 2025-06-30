@@ -4,17 +4,36 @@
 export function showMessage({
   msg,
   isError,
-  isInfinite
+  isInfinite,
+  isLoading
 }: {
   msg: string;
   isError?: boolean;
   isInfinite?: boolean;
+  isLoading?: boolean;
 }) {
   const message: HTMLElement = document.querySelector('#message')!;
-  message.style.color = isError ? 'red' : 'limegreen';
+  
+  // Limpiar clases previas
+  message.className = 'message';
+  
+  // Agregar clase según el tipo
+  if (isLoading) {
+    message.classList.add('loading');
+  } else if (isError) {
+    message.classList.add('error');
+  } else {
+    message.classList.add('success');
+  }
+  
   message.textContent = msg;
-  message.style.display = 'block';
-  if (!isInfinite) setTimeout(() => (message.style.display = 'none'), 5000);
+  message.classList.remove('hidden');
+  
+  if (!isInfinite) {
+    setTimeout(() => {
+      message.classList.add('hidden');
+    }, 5000);
+  }
 }
 
 /**

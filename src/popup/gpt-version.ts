@@ -57,7 +57,7 @@ export async function checkModel() {
     return;
   }
 
-  showMessage({ msg: 'Probando el modelo...', isInfinite: true, isError: false });
+  showMessage({ msg: 'Probando el modelo...', isInfinite: true, isLoading: true });
 
   try {
     if (apiProvider === 'gemini') {

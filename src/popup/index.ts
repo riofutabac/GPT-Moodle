@@ -13,11 +13,14 @@ const saveBtn = document.querySelector('.save')!;
 const openAIConfig = document.getElementById('openai_config')!;
 const geminiConfig = document.getElementById('gemini_config')!;
 const apiProviderRadios = document.querySelectorAll('input[name="apiProvider"]');
+const providerLabels = document.querySelectorAll('.provider-option');
 
 function updateVisibleApiKeyField() {
   const selectedProvider = (
     document.querySelector('input[name="apiProvider"]:checked') as HTMLInputElement
   )?.value;
+  
+  // Actualizar visibilidad de campos
   if (selectedProvider === 'openai') {
     openAIConfig.style.display = 'flex';
     geminiConfig.style.display = 'none';
@@ -25,10 +28,35 @@ function updateVisibleApiKeyField() {
     openAIConfig.style.display = 'none';
     geminiConfig.style.display = 'flex';
   }
+  
+  // Actualizar clases de los labels
+  providerLabels.forEach(label => {
+    label.classList.remove('selected');
+  });
+  
+  // Marcar el label correspondiente como seleccionado
+  const selectedLabel = document.querySelector(`label[for="provider${selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1)}"]`);
+  if (selectedLabel) {
+    selectedLabel.classList.add('selected');
+  }
 }
 
+// Agregar event listeners tanto a los radios como a los labels
 apiProviderRadios.forEach(radio => {
   radio.addEventListener('change', updateVisibleApiKeyField);
+});
+
+providerLabels.forEach(label => {
+  label.addEventListener('click', () => {
+    const forAttribute = label.getAttribute('for');
+    if (forAttribute) {
+      const radio = document.getElementById(forAttribute) as HTMLInputElement;
+      if (radio) {
+        radio.checked = true;
+        updateVisibleApiKeyField();
+      }
+    }
+  });
 });
 
 // Save the configuration
