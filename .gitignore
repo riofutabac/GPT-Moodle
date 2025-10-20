@@ -1,8 +1,16 @@
 # Dependencias
 node_modules
+gitingest-ingest
 
 # Archivos de entorno y secretos
 .env
 .env.*
+
+# Builds de extensión
+moodlegpt-extension-updated.zip
+moodlegpt-extension-updated/
+
+# Editor
+.vscode/
 
 # Archivos de compilación y temporales
