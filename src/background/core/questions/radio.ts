@@ -32,13 +32,13 @@ function handleRadio(
   // Extract the actual answer from the response using smart extraction
   const extractedAnswers = extractAnswersFromResponse(gptAnswer.normalizedResponse);
   const extractedAnswer = extractedAnswers[0]; // For radio, we expect only one answer
-  
+
   if (!extractedAnswer) return false;
-  
+
   if (config.logs) {
     console.log('[EXTRACTED ANSWER]', extractedAnswer);
   }
-  
+
   const bestAnswer = pickBestReponse(extractedAnswer, possibleAnswers);
 
   if (config.logs && bestAnswer.value) {

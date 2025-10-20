@@ -10,6 +10,17 @@ type ResponsesBySimilarity = {
   element: HTMLElement;
 };
 
+// --- NUEVO: normalización robusta (acentos, puntuación, espacios) ---
+function normalizeTextForMatch(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD') // separa acentos
+    .replace(/[\u0300-\u036f]/g, '') // quita acentos
+    .replace(/[^a-z0-9\s]/g, ' ') // quita signos duros
+    .replace(/\s+/g, ' ') // compacta espacios
+    .trim();
+}
+
 /**
  * Calculate the levenshtein distance between two sentence
  * @param str1
@@ -17,28 +28,27 @@ type ResponsesBySimilarity = {
  * @returns
  */
 function levenshteinDistance(str1: string, str2: string) {
+  str1 = normalizeTextForMatch(str1).replace(/\s+/g, '');
+  str2 = normalizeTextForMatch(str2).replace(/\s+/g, '');
+
   if (str1.length === 0) return str2.length;
   if (str2.length === 0) return str1.length;
 
-  const matrix: number[][] = [];
-  const str1WithoutSpaces = str1.replace(/\s+/, '');
-  const str2WithoutSpaces = str2.replace(/\s+/, '');
-
-  for (let i = 0; i <= str1WithoutSpaces.length; ++i) {
-    matrix.push([i]);
-    for (let j = 1; j <= str2WithoutSpaces.length; ++j) {
+  const matrix: number[][] = Array.from({ length: str1.length + 1 }, () => []);
+  for (let i = 0; i <= str1.length; ++i) {
+    matrix[i][0] = i;
+    for (let j = 1; j <= str2.length; ++j) {
       matrix[i][j] =
         i === 0
           ? j
           : Math.min(
               matrix[i - 1][j] + 1,
               matrix[i][j - 1] + 1,
-              matrix[i - 1][j - 1] + (str1WithoutSpaces[i - 1] === str2WithoutSpaces[j - 1] ? 0 : 1)
+              matrix[i - 1][j - 1] + (str1[i - 1] === str2[j - 1] ? 0 : 1)
             );
     }
   }
-
-  return matrix[str1WithoutSpaces.length][str2WithoutSpaces.length];
+  return matrix[str1.length][str2.length];
 }
 
 /**
@@ -47,10 +57,27 @@ function levenshteinDistance(str1: string, str2: string) {
  * @param str2
  * @returns
  */
-function sentenceSimilarity(str1: string, str2: string) {
-  const longerLength = str1.length > str2.length ? str1.length : str2.length;
-  if (longerLength === 0) return 1;
-  return (longerLength - levenshteinDistance(str1, str2)) / longerLength;
+function charSimilarity(str1: string, str2: string) {
+  const la = normalizeTextForMatch(str1);
+  const lb = normalizeTextForMatch(str2);
+  const L = Math.max(la.length, lb.length) || 1;
+  return (L - levenshteinDistance(la, lb)) / L;
+}
+
+// --- NUEVO: similitud léxica (Dice) ---
+function tokenDiceCoefficient(a: string, b: string) {
+  const A = new Set(normalizeTextForMatch(a).split(' ').filter(Boolean));
+  const B = new Set(normalizeTextForMatch(b).split(' ').filter(Boolean));
+  if (A.size === 0 && B.size === 0) return 1;
+  const inter = [...A].filter(x => B.has(x)).length;
+  return (2 * inter) / (A.size + B.size || 1);
+}
+
+// --- NUEVO: score híbrido más estable ---
+function hybridSimilarity(a: string, b: string) {
+  const c = charSimilarity(a, b);
+  const t = tokenDiceCoefficient(a, b);
+  return 0.6 * c + 0.4 * t; // ponderación conservadora
 }
 
 /**
@@ -69,7 +96,7 @@ export function pickBestReponse(
     value: null
   };
   for (const obj of arr) {
-    const similarity = sentenceSimilarity(obj.value, answer);
+    const similarity = hybridSimilarity(obj.value, answer);
     if (similarity === 1) {
       return { element: obj.element, value: obj.value, similarity };
     }
@@ -94,7 +121,7 @@ export function pickResponsesWithSimilarityGreaterThan(
 ): ResponsesBySimilarity[] {
   const responses: ResponsesBySimilarity[] = [];
   for (const obj of arr) {
-    const similarity = sentenceSimilarity(obj.value, answer);
+    const similarity = hybridSimilarity(obj.value, answer);
     if (similarity >= score)
       responses.push({
         similarity,
@@ -102,7 +129,7 @@ export function pickResponsesWithSimilarityGreaterThan(
         element: obj.element
       });
   }
-  return responses.sort((a, b) => a.similarity - b.similarity);
+  return responses.sort((a, b) => b.similarity - a.similarity);
 }
 
 /**
@@ -110,5 +137,5 @@ export function pickResponsesWithSimilarityGreaterThan(
  * @param similarity
  */
 export function toPourcentage(similarity: number): string {
-  return Math.round(similarity * 100 * 100) / 100 + '%';
+  return Math.round(similarity * 10000) / 100 + '%';
 }

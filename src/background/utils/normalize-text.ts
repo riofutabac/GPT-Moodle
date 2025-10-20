@@ -18,19 +18,39 @@ function normalizeText(text: string, toLowerCase: boolean = true) {
 }
 
 /**
+ * Remove diacritics from text
+ */
+function stripDiacritics(s: string) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/**
+ * Normalize text for comparison purposes
+ */
+export function normalizeForCompare(s: string) {
+  return stripDiacritics(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Check if line should be skipped as introductory text
  */
 function isIntroductoryLine(line: string): boolean {
   const lower = line.toLowerCase();
-  return lower.includes('here are the solutions') ||
-         lower.includes('here is the correct order') ||
-         lower.includes('based on the options') ||
-         lower.includes('the roles') ||
-         lower.includes('you\'ve correctly identified') ||
-         lower.includes('here\'s the breakdown') ||
-         lower.includes('from your list') ||
-         lower.includes('what is an informatician') ||
-         lower.includes('choose...');
+  return (
+    lower.includes('here are the solutions') ||
+    lower.includes('here is the correct order') ||
+    lower.includes('based on the options') ||
+    lower.includes('the roles') ||
+    lower.includes("you've correctly identified") ||
+    lower.includes("here's the breakdown") ||
+    lower.includes('from your list') ||
+    lower.includes('what is an informatician') ||
+    lower.includes('choose...')
+  );
 }
 
 /**
@@ -41,44 +61,98 @@ function isIntroductoryLine(line: string): boolean {
 export function extractAnswersFromResponse(response: string): string[] {
   const lines = response.split('\n');
   const answers: string[] = [];
-  
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    
+
+  for (const raw of lines) {
+    const line = raw.trim();
+
     // Skip empty lines and introductory text
-    if (!trimmedLine || isIntroductoryLine(trimmedLine)) continue;
-    
+    if (!line || isIntroductoryLine(line)) continue;
+
     // Check if this line has bold markdown (likely an answer)
-    const boldMatch = /\*\*([^*]+)\*\*/.exec(trimmedLine);
+    const boldMatch = /\*\*([^*]+)\*\*/.exec(line);
     if (boldMatch) {
       const answer = boldMatch[1].trim();
-      // Skip question marks and explanatory text
-      if (answer !== '?' && !answer.toLowerCase().includes('yes.') && !answer.toLowerCase().includes('no.')) {
+      // Skip question marks and "no" responses
+      if (answer !== '?' && !/^no\.?$/i.test(answer)) {
         answers.push(answer);
         continue;
       }
     }
-    
+
     // For bullet points with bold answers like "* **25**"
-    const bulletBoldMatch = /^\*\s*\*\*([^*]+)\*\*/.exec(trimmedLine);
+    const bulletBoldMatch = /^\*\s*\*\*([^*]+)\*\*/.exec(line);
     if (bulletBoldMatch) {
       answers.push(bulletBoldMatch[1].trim());
       continue;
     }
-    
+
+    // patrones tipo "1) Texto", "A) Texto", "1. Texto", "A: Texto"
+    const ordered = /^([0-9]+|[A-Za-z])[.)\]:-]\s*(.+)$/.exec(line);
+    if (ordered) {
+      const val = ordered[2].trim();
+      if (val) {
+        answers.push(val);
+        continue;
+      }
+    }
+
+    // flechas "A -> B -> C" o "A → B → C"
+    if (line.includes('->') || line.includes('→')) {
+      const parts = line
+        .split(/->|→/)
+        .map(s => s.trim())
+        .filter(Boolean);
+      if (parts.length >= 2) {
+        answers.push(...parts);
+        continue;
+      }
+    }
+
     // For simple numbers or short answers
-    if (/^\d+$/.test(trimmedLine) && trimmedLine.length <= 2) {
-      answers.push(trimmedLine);
+    if (/^\d{1,2}$/.test(line)) {
+      answers.push(line);
       continue;
     }
-    
-    // For single word answers that might not have bold formatting
-    if (trimmedLine.toLowerCase() === 'true' || trimmedLine.toLowerCase() === 'false') {
-      answers.push(trimmedLine.toLowerCase());
+
+    // booleanos en ES/EN
+    if (/^(verdadero|falso|true|false|sí|si|no)$/i.test(line)) {
+      answers.push(line.toLowerCase());
     }
   }
-  
+
   return answers;
+}
+
+/**
+ * Extract ordered answers specifically (for "put in order" type questions)
+ * @param response - The complete normalized response from GPT
+ * @returns Array of answers in order
+ */
+export function extractOrderedAnswers(response: string): string[] {
+  const lines = response
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean);
+  const seq: string[] = [];
+
+  for (const l of lines) {
+    // 1) Alpha | A) Alpha | 1. Alpha | A: Alpha
+    const m = /^([\d]+|[A-Za-z])[.)\]:-]\s*(.+)$/.exec(l);
+    if (m) {
+      const val = m[2].trim();
+      if (val) seq.push(val);
+    }
+  }
+  if (seq.length >= 2) return seq;
+
+  // flechas "Alpha -> Beta -> Gamma"
+  const as = response
+    .split(/->|→/)
+    .map(s => s.trim())
+    .filter(Boolean);
+  if (as.length >= 2) return as;
+
+  return [];
 }
 
 /**
@@ -89,36 +163,33 @@ export function extractAnswersFromResponse(response: string): string[] {
 export function extractCheckboxAnswers(response: string): string[] {
   const lines = response.split('\n');
   const answers: string[] = [];
-  
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    
+
+  for (const raw of lines) {
+    const line = raw.trim();
+
     // Skip empty lines and introductory text
-    if (!trimmedLine || isIntroductoryLine(trimmedLine)) continue;
-    
-    // Look for lines with bold text followed by YES/NO explanations
-    const yesPattern = /\*\*([^*]+):\s*yes\./i;
-    const yesMatch = yesPattern.exec(trimmedLine);
-    if (yesMatch) {
-      answers.push(yesMatch[1].trim());
+    if (!line || isIntroductoryLine(line)) continue;
+
+    // "**Opción: yes.**" o "**Opción: sí.**"
+    const yes =
+      /\*\*([^*]+):\s*(yes|sí|si)\.\*\*/i.exec(line) ||
+      /\*\*([^*]+)\*\*:\s*(yes|sí|si)\.?/i.exec(line);
+    if (yes) {
+      answers.push(yes[1].trim());
       continue;
     }
-    
-    // Look for bullet points with YES answers
-    const bulletYesPattern = /^\*\s*\*\*([^*]+):\*\*\s*\*\*yes\.\*\*/i;
-    const bulletYesMatch = bulletYesPattern.exec(trimmedLine);
-    if (bulletYesMatch) {
-      answers.push(bulletYesMatch[1].trim());
+
+    // viñeta "**Opción:** **yes.**"
+    const bulletYes = /^\*\s*\*\*([^*]+):\*\*\s*\*\*(yes|sí|si)\.\*\*/i.exec(line);
+    if (bulletYes) {
+      answers.push(bulletYes[1].trim());
       continue;
     }
-    
-    // Skip NO answers explicitly
-    if (trimmedLine.toLowerCase().includes(': **no.**') || 
-        trimmedLine.toLowerCase().includes(':** **no.**')) {
-      continue;
-    }
+
+    // descartar "no" explícitos
+    if (/(?:^|\s):(.*\b)(no)\.?(\*\*)?$/i.test(line)) continue;
   }
-  
+
   return answers;
 }
 
@@ -129,7 +200,7 @@ export function extractCheckboxAnswers(response: string): string[] {
  */
 export function extractAnswer(line: string): string {
   const originalLine = line;
-  
+
   // Skip introductory lines that don't contain answers
   if (
     line.toLowerCase().includes('here are the solutions') ||
@@ -176,17 +247,20 @@ export function extractAnswer(line: string): string {
   }
 
   // Skip lines that look like question descriptions
-  if (line.toLowerCase().includes('i am a') || 
-      line.toLowerCase().includes('i produce') ||
-      line.toLowerCase().includes('write java') ||
-      line.toLowerCase().includes('compile the') ||
-      line.toLowerCase().includes('execute the')) {
+  if (
+    line.toLowerCase().includes('i am a') ||
+    line.toLowerCase().includes('i produce') ||
+    line.toLowerCase().includes('write java') ||
+    line.toLowerCase().includes('compile the') ||
+    line.toLowerCase().includes('execute the')
+  ) {
     return '';
   }
 
   // Return the line as is if no special pattern found, but only if it seems like an answer
   const trimmed = line.trim();
-  if (trimmed.length > 0 && trimmed.length < 20) { // Likely a short answer
+  if (trimmed.length > 0 && trimmed.length < 20) {
+    // Likely a short answer
     return trimmed;
   }
 

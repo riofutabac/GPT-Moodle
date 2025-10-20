@@ -1,7 +1,10 @@
 import type Config from '../../types/config';
 import type GPTAnswer from '../../types/gpt-answer';
 import Logs from 'background/utils/logs';
-import normalizeText, { extractAnswersFromResponse } from 'background/utils/normalize-text';
+import normalizeText, {
+  extractAnswersFromResponse,
+  extractOrderedAnswers
+} from 'background/utils/normalize-text';
 import { pickBestReponse } from 'background/utils/pick-best-response';
 
 /**
@@ -22,8 +25,12 @@ function handleSelect(
 
   if (config.logs) Logs.array(corrects);
 
-  // Extract all valid answers from the response using the smart extraction
-  const extractedAnswers = extractAnswersFromResponse(gptAnswer.normalizedResponse);
+  // 1) Intento específico de ordenamiento
+  const ordered = extractOrderedAnswers(gptAnswer.normalizedResponse);
+
+  // 2) Si no hay orden claro, caemos al extractor general
+  const extractedAnswers =
+    ordered.length > 0 ? ordered : extractAnswersFromResponse(gptAnswer.normalizedResponse);
 
   if (config.logs) {
     console.log('[EXTRACTED ANSWERS]', extractedAnswers);

@@ -22,7 +22,7 @@ function handleNumber(
     return false;
   }
 
-  const number = gptAnswer.normalizedResponse.match(/\d+([,.]\d+)?/gi)?.[0]?.replace(',', '.');
+  const number = gptAnswer.normalizedResponse.match(/-?\d+([.,]\d+)?/)?.[0]?.replace(',', '.');
 
   if (number === undefined) return false;
 

@@ -56,6 +56,17 @@ providerLabels.forEach(label => {
       if (radio) {
         radio.checked = true;
         updateVisibleApiKeyField();
+
+        // Refrescar controles dependientes del proveedor
+        checkCanIncludeImages();
+
+        // Repoblar lista de modelos según proveedor seleccionado
+        const modelsList = document.querySelector('#models') as HTMLElement;
+        modelsList.innerHTML = '';
+
+        // Disparar el evento focus para cargar los modelos correspondientes
+        const inputModel = document.querySelector('#model') as HTMLInputElement;
+        inputModel.dispatchEvent(new Event('focus'));
       }
     }
   });

@@ -1,7 +1,10 @@
 import type Config from '../../types/config';
 import type GPTAnswer from '../../types/gpt-answer';
 import Logs from 'background/utils/logs';
-import { extractAnswersFromResponse, extractCheckboxAnswers } from 'background/utils/normalize-text';
+import {
+  extractAnswersFromResponse,
+  extractCheckboxAnswers
+} from 'background/utils/normalize-text';
 import { pickBestReponse } from 'background/utils/pick-best-response';
 
 /**
@@ -32,7 +35,7 @@ function handleCheckbox(
   // Extract all valid answers from the response using the smart extraction
   // Try checkbox-specific extraction first (for YES/NO questions)
   let extractedAnswers = extractCheckboxAnswers(gptAnswer.normalizedResponse);
-  
+
   // If no YES/NO answers found, use general extraction
   if (extractedAnswers.length === 0) {
     extractedAnswers = extractAnswersFromResponse(gptAnswer.normalizedResponse);

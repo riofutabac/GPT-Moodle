@@ -44,7 +44,46 @@ export async function populateDatalistWithGptVersions() {
   }
 }
 
-inputModel.addEventListener('focus', populateDatalistWithGptVersions);
+async function populateDatalistWithGeminiModels() {
+  const apiKey = (document.querySelector('#geminiApiKey') as HTMLInputElement).value?.trim();
+  if (!apiKey) return;
+
+  modelsList.innerHTML = '';
+
+  // Probamos v1 y v1beta; la primera que responda, gana.
+  for (const ver of ['v1', 'v1beta']) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/${ver}/models?key=${encodeURIComponent(apiKey)}`;
+      const resp = await fetch(url);
+      if (!resp.ok) continue;
+
+      const data = await resp.json();
+      const models = Array.isArray(data.models) ? data.models : [];
+
+      for (const m of models) {
+        // m.name suele venir como "models/gemini-2.0-flash" → nos quedamos con el id corto
+        const id = (m.name?.replace(/^models\//, '') || m.displayName || '').trim();
+        if (!id) continue;
+        const opt = document.createElement('option');
+        opt.value = id;
+        modelsList.appendChild(opt);
+      }
+      break; // si una versión respondió, no seguimos
+    } catch {
+      // ignoramos e intentamos la siguiente
+    }
+  }
+}
+
+inputModel.addEventListener('focus', async () => {
+  const provider = (document.querySelector('input[name="apiProvider"]:checked') as HTMLInputElement)
+    ?.value;
+  if (provider === 'gemini') {
+    await populateDatalistWithGeminiModels();
+  } else {
+    await populateDatalistWithGptVersions();
+  }
+});
 
 export async function checkModel() {
   const model = inputModel.value?.trim();
@@ -67,7 +106,10 @@ export async function checkModel() {
       if (!geminiApiKey) throw new Error('No se proporcionó una clave de API de Gemini.');
 
       const genAI = new GoogleGenAI({ apiKey: geminiApiKey });
-      await genAI.models.generateContent({ model, contents: 'Test' });
+      await genAI.models.generateContent({
+        model,
+        contents: [{ role: 'user', parts: [{ text: 'ping' }] }]
+      });
     } else {
       // OpenAI
       const apiKey = (document.querySelector('#apiKey') as HTMLInputElement).value?.trim();
